@@ -1,7 +1,20 @@
 import numpy as np
 
 in_file = open("in.txt", "r")
+#part 1 answer is 106517
 
+
+def get_numbered_grid(f):
+    g = []
+
+    for line in f.readlines():
+        g.append([int(x) for x in line
+                  .strip('\n')
+                  .replace("#","5")
+                  .replace(".", "0")
+                  .replace("O", "1")])
+
+    return np.array(g)
 
 
 def bin_line(length, line, reverse=False):
@@ -11,18 +24,18 @@ def bin_line(length, line, reverse=False):
     else:
         l = line[:]
 
-    c = np.where(l == "#")
+    c = np.where(l == 5)
     cubes = c[0]
 
     round_bins = []
 
     #all round rocks, add one to pretend there's a cube at -1
-    round_bins.append((length + 1, np.count_nonzero(l == 'O')))
+    round_bins.append((length + 1, np.count_nonzero(l == 1)))
 
     i = 0
     #count round rocks past each cube
     while i < len(cubes):
-        round = np.count_nonzero(line[cubes[i]:] == 'O')
+        round = np.count_nonzero(line[cubes[i]:] == 1)
         round_bins.append((length - cubes[i], round))
 
         i += 1
@@ -35,64 +48,129 @@ def score_grid(grid):
     scores = []
 
     for col in range(len(grid[0])):
-        #print("col", col)
-
-        bins = bin_line(len(grid), grid[:,col])
-
-        b = list(reversed(bins))
-
         score = 0
-
-        counted_rocks = 0
-
-        for i in range(len(b)):
-            active_rocks = b[i][1] - counted_rocks
-
-            score += sum(range(b[i][0] - active_rocks, b[i][0]))
-                            
-            counted_rocks += active_rocks
-        
+        rounds = np.where(grid[:,col] == 1)
+        for r in rounds[0]:
+            score += len(grid[:,col]) - r
         scores.append(score)
+
+        
 
     return scores
 
+def roll_north(grid):
+    for col in range(len(grid[0])):
+        cubes = np.where(grid[:,col] == 5)
+        cubes = cubes[0]
+        if len(cubes) == 0:
+            grid[:,col] = -np.sort(-grid[:, col])
+        else:
+            c = 0
+            while c <= len(cubes):
+                if c == 0:
+                    sort_start = 0
+                else:
+                    sort_start = cubes[c-1] + 1
+                if c == len(cubes):
+                    sort_end = len(grid[:,col])
+                else:
+                    sort_end = cubes[c]
 
-def adjust_line(line, bins, reverse=False):
-
-    if reverse:
-        b = reversed(bins)
-    else:
-        b = bins[:]
-
-    line[0] = "%"
+                grid[:,col][sort_start:sort_end] = -np.sort(-grid[:,col][sort_start:sort_end])
+                c += 1
 
 
+def roll_south(grid):
+    for col in range(len(grid[0])):
+        cubes = np.where(grid[:,col] == 5)
+        cubes = cubes[0]
+        if len(cubes) == 0:
+            grid[:,col] = np.sort(grid[:, col])
+        else:
+            c = 0
+            while c <= len(cubes):
+                if c == 0:
+                    sort_start = 0
+                else:
+                    sort_start = cubes[c-1] + 1
+                if c == len(cubes):
+                    sort_end = len(grid[:,col])
+                else:
+                    sort_end = cubes[c]
 
-    print("line", line)
-    print("bins", bins)
-    print()
+                grid[:,col][sort_start:sort_end] = np.sort(grid[:,col][sort_start:sort_end])
+                c += 1
+
+
+def roll_east(grid):
+    for row in range(len(grid)):
+        cubes = np.where(grid[row,:] == 5)
+        cubes = cubes[0]
+        if len(cubes) == 0:
+            grid[row,:] = np.sort(grid[row, :])
+        else:
+            c = 0
+            while c <= len(cubes):
+                if c == 0:
+                    sort_start = 0
+                else:
+                    sort_start = cubes[c-1] + 1
+                if c == len(cubes):
+                    sort_end = len(grid[row,:])
+                else:
+                    sort_end = cubes[c]
+
+                grid[row,:][sort_start:sort_end] = np.sort(grid[row,:][sort_start:sort_end])
+                c += 1
+
+
+def roll_west(grid):
+    for row in range(len(grid)):
+        cubes = np.where(grid[row,:] == 5)
+        cubes = cubes[0]
+        if len(cubes) == 0:
+            grid[row,:] = -np.sort(-grid[row, :])
+        else:
+            c = 0
+            while c <= len(cubes):
+                if c == 0:
+                    sort_start = 0
+                else:
+                    sort_start = cubes[c-1] + 1
+                if c == len(cubes):
+                    sort_end = len(grid[row,:])
+                else:
+                    sort_end = cubes[c]
+
+                grid[row,:][sort_start:sort_end] = -np.sort(-grid[row,:][sort_start:sort_end])
+                c += 1
 
 
 def cycle(grid):
-    col = 1
+    roll_north(grid)
+
+    roll_west(grid)
+    
+    roll_south(grid)   
+    
+    roll_east(grid)
+
+
     
 
 
 
-g = []
+grid = get_numbered_grid(in_file)
 
-for line in in_file.readlines():
-    g.append([x for x in line.strip('\n')])
+runs = 1000
 
-grid = np.array(g)
+for i in range(runs):
+    print(i)
+    cycle(grid)
 
 scores = score_grid(grid)
 
-
-print(scores)
 print(sum(scores))
-
-
 
 
 in_file.close()
