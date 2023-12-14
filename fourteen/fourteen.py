@@ -1,6 +1,6 @@
 import numpy as np
 
-in_file = open("test.txt", "r")
+in_file = open("in.txt", "r")
 
 
 
@@ -22,7 +22,7 @@ def bin_line(length, line, reverse=False):
     i = 0
     #count round rocks past each cube
     while i < len(cubes):
-        round = np.count_nonzero(grid[:,col][cubes[i]:] == 'O')
+        round = np.count_nonzero(line[cubes[i]:] == 'O')
         round_bins.append((length - cubes[i], round))
 
         i += 1
@@ -30,21 +30,31 @@ def bin_line(length, line, reverse=False):
     return round_bins
 
 
-def score_line(bins):
-    b = list(reversed(bins))
+def score_grid(grid):
 
-    score = 0
+    scores = []
 
-    counted_rocks = 0
+    for col in range(len(grid[0])):
+        #print("col", col)
 
-    for i in range(len(b)):
-        active_rocks = b[i][1] - counted_rocks
+        bins = bin_line(len(grid), grid[:,col])
 
-        score += sum(range(b[i][0] - active_rocks, b[i][0]))
-                           
-        counted_rocks += active_rocks
+        b = list(reversed(bins))
 
-    return score
+        score = 0
+
+        counted_rocks = 0
+
+        for i in range(len(b)):
+            active_rocks = b[i][1] - counted_rocks
+
+            score += sum(range(b[i][0] - active_rocks, b[i][0]))
+                            
+            counted_rocks += active_rocks
+        
+        scores.append(score)
+
+    return scores
 
 
 def adjust_line(line, bins, reverse=False):
@@ -54,6 +64,8 @@ def adjust_line(line, bins, reverse=False):
     else:
         b = bins[:]
 
+    line[0] = "%"
+
 
 
     print("line", line)
@@ -62,7 +74,8 @@ def adjust_line(line, bins, reverse=False):
 
 
 def cycle(grid):
-    pass
+    col = 1
+    
 
 
 
@@ -73,16 +86,7 @@ for line in in_file.readlines():
 
 grid = np.array(g)
 
-scores = []
-
-for col in range(len(grid[0])):
-    #print("col", col)
-
-    round_bins = bin_line(len(grid), grid[:,col])
-
-    adjust_line(grid[:,col], round_bins)
-
-    scores.append(score_line(round_bins))
+scores = score_grid(grid)
 
 
 print(scores)
